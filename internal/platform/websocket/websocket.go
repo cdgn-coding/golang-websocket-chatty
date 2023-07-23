@@ -120,7 +120,7 @@ func (app *App) handleLiveness(cancel context.CancelFunc, connection *websocket.
 				app.OnDisconnect(connection)
 				return
 			}
-			err := connection.WriteMessage(websocket.PingMessage, nil)
+			err := app.onPing(connection, waitPeriod)
 			if err != nil {
 				log.Printf("Error sending ping - %v", err)
 				return
@@ -164,6 +164,14 @@ func (app *App) handleNewMessage(connection *websocket.Conn) func(message *chatr
 			log.Printf("Cannot send message - %v", err)
 		}
 	}
+}
+
+func (app *App) onPing(connection *websocket.Conn, deadline time.Duration) error {
+	err := connection.SetWriteDeadline(time.Now().Add(deadline))
+	if err != nil {
+		return err
+	}
+	return connection.WriteMessage(websocket.PongMessage, nil)
 }
 
 func (app *App) OnWrite(connection *websocket.Conn, bytes []byte, deadline time.Duration) error {
