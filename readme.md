@@ -30,3 +30,42 @@ This project is built with primarily two layers: business and platform.
 Business is responsible for application logic such as chat room creation and participant actions.
 On the other hand, platform is responsible for persisting data, handling network connections and 
 orchestrating message pipelines.
+
+## How to run
+
+Run `cmd/http/server/main.go` with go 1.8 or above to start the chat service on port 8080.
+It is also possible to run the project using the Dockerfile included.
+
+```sh
+docker build -t chatty .
+docker run -p 8080:8080 chatty
+```
+
+### Usage
+
+Create a chat room
+
+```http request
+POST http://localhost:8080/chat?name=RoomName
+```
+
+It will return a room id
+
+```json
+{"id":"2SzErhA2PvYGjf4PQ4pvTh9BfE0","name":"MyRoom"}
+```
+
+Join a chat room
+
+```http request
+WEBSOCKET wss://localhost:8080/chat/join?name=John&room=2SzZjrkgJh15Y6SIPZf20LDH7lE
+```
+
+Send messages to the chat using plain text and receive room events in json format.
+
+```json
+{"event_type":"participant_joined","participant":"John"}
+```
+```json
+{"text":"Hello World!","participant":"John"}
+```
