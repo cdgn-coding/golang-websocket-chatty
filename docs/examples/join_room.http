@@ -1,0 +1,7 @@
+WEBSOCKET wss://localhost:8080/chat/join?name=John&room=2SzZjrkgJh15Y6SIPZf20LDH7lE
+Content-Type: application-json // Used for content highlighting only
+
+Hello World!
+=== wait-for-server
+My name is John Doe
+=== wait-for-server
