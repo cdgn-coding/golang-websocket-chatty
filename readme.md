@@ -31,6 +31,11 @@ Business is responsible for application logic such as chat room creation and par
 On the other hand, platform is responsible for persisting data, handling network connections and 
 orchestrating message pipelines.
 
+Image below shows the logical view of this architecture.
+
+![Architecture](./docs/diagrams/logic.png)
+
+
 ## How to run
 
 Run `cmd/http/server/main.go` with go 1.8 or above to start the chat service on port 8080.
