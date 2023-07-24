@@ -68,7 +68,7 @@ func (app *App) Handle(w http.ResponseWriter, r *http.Request) {
 	app.OnConnect(connection)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer app.handleDisconnect(cancel, participant, connection)
-	go app.handleLiveness(cancel, connection)
+	go app.handleLiveness(ctx, cancel, connection)
 
 	go participant.OnListen(ctx, app.handleNewMessage(connection))
 	go participant.OnEvent(ctx, app.handleNewEvent(connection))
@@ -90,7 +90,7 @@ func (app *App) Handle(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (app *App) handleLiveness(cancel context.CancelFunc, connection *websocket.Conn) {
+func (app *App) handleLiveness(ctx context.Context, cancel context.CancelFunc, connection *websocket.Conn) {
 	waitPeriod := 5 * time.Second
 
 	connection.SetPongHandler(func(string) error {
@@ -101,29 +101,33 @@ func (app *App) handleLiveness(cancel context.CancelFunc, connection *websocket.
 		ticker := time.NewTicker(waitPeriod)
 		defer ticker.Stop()
 		for {
-			<-ticker.C
-			if app.closing {
-				cancel()
-				event := NewServerShuttingDown()
-				bytes, err := json.Marshal(event)
-				if err != nil {
-					log.Printf("Cannot marshal event - %v", err)
-					return
-				}
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				if app.closing {
+					cancel()
+					event := NewServerShuttingDown()
+					bytes, err := json.Marshal(event)
+					if err != nil {
+						log.Printf("Cannot marshal event - %v", err)
+						return
+					}
 
-				waitPeriod := 3 * time.Second
-				err = app.OnWrite(connection, bytes, waitPeriod)
-				if err != nil {
-					log.Printf("Cannot write message - %v", err)
+					waitPeriod := 3 * time.Second
+					err = app.OnWrite(connection, bytes, waitPeriod)
+					if err != nil {
+						log.Printf("Cannot write message - %v", err)
+						return
+					}
+					app.OnDisconnect(connection)
 					return
 				}
-				app.OnDisconnect(connection)
-				return
-			}
-			err := app.onPing(connection, waitPeriod)
-			if err != nil {
-				log.Printf("Error sending ping - %v", err)
-				return
+				err := app.onPing(connection, waitPeriod)
+				if err != nil {
+					log.Printf("Error sending ping - %v", err)
+					return
+				}
 			}
 		}
 	}()
